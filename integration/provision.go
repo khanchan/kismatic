@@ -355,12 +355,12 @@ func (p packetProvisioner) TerminateNode(node NodeDeets) error {
 
 func (p packetProvisioner) ConfigureDNS(masterIPs []string) (*DNSRecord, error) {
 	// TODO
-	return nil, fmt.Errorf("ConfigureDNS not imeplemented")
+	return nil, fmt.Errorf("ConfigureDNS not implemented")
 }
 
 func (p packetProvisioner) RemoveDNS(dnsRecord *DNSRecord) error {
 	// TODO
-	return fmt.Errorf("RemoveDNS not imeplemented")
+	return fmt.Errorf("RemoveDNS not implemented")
 }
 
 func (p packetProvisioner) createNode(distro packet.OS, count uint16) (string, error) {
