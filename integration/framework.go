@@ -61,11 +61,11 @@ func WithInfrastructureAndDNS(nodeCount NodeCount, distro linuxDistro, provision
 	Expect(err).ToNot(HaveOccurred())
 
 	By("Configuring DNS entries")
-	var mastterIPs []string
+	var masterIPs []string
 	for _, node := range nodes.master {
-		mastterIPs = append(mastterIPs, node.PrivateIP)
+		masterIPs = append(masterIPs, node.PrivateIP)
 	}
-	dnsRecord, err := provisioner.ConfigureDNS(mastterIPs)
+	dnsRecord, err := provisioner.ConfigureDNS(masterIPs)
 	nodes.dnsRecord = dnsRecord
 	Expect(err).ToNot(HaveOccurred())
 	if !leaveIt() {
