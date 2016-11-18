@@ -65,31 +65,23 @@ type Credentials struct {
 
 // Client for provisioning machines on AWS
 type Client struct {
-	Config        ClientConfig
-	Credentials   Credentials
-	session       *session.Session
-	ec2Client     *ec2.EC2
-	route53Client *route53.Route53
+	Config      ClientConfig
+	Credentials Credentials
+	session     *session.Session
 }
 
 func (c *Client) getEC2APIClient() (*ec2.EC2, error) {
-	if c.ec2Client == nil {
-		if err := c.prepareSession(); err != nil {
-			return nil, err
-		}
-		c.ec2Client = ec2.New(c.session)
+	if err := c.prepareSession(); err != nil {
+		return nil, err
 	}
-	return c.ec2Client, nil
+	return ec2.New(c.session), nil
 }
 
 func (c *Client) getRoute53APIClient() (*route53.Route53, error) {
-	if c.ec2Client == nil {
-		if err := c.prepareSession(); err != nil {
-			return nil, err
-		}
-		c.route53Client = route53.New(c.session)
+	if err := c.prepareSession(); err != nil {
+		return nil, err
 	}
-	return c.route53Client, nil
+	return route53.New(c.session), nil
 }
 
 func (c *Client) prepareSession() error {
@@ -331,9 +323,9 @@ func modifyHostedZone(record *DNSRecord, action string, hostedZoneID string, api
 	if changeID == nil || *changeID == "" {
 		return fmt.Errorf("Something went wrong, DNS change ID is nil")
 	}
-	// TODO verify propagated
+
 	changeReq := &route53.GetChangeInput{
-		Id: aws.String(*changeID), // Required
+		Id: aws.String(*changeID),
 	}
 
 	err = retryWithBackoff(func() error {
