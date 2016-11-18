@@ -167,6 +167,20 @@ func installKismaticWithDNS(nodes provisionedNodes, installOpts installOptions, 
 	return cmd.Run()
 }
 
+func verifyMasterNodeFailure(nodes provisionedNodes, installOpts installOptions, provisioner infrastructureProvisioner, sshKey string) error {
+	By("Removing a Kubernetes master node")
+	if err := provisioner.TerminateNode(nodes.master[0]); err != nil {
+		return fmt.Errorf("Could not remove node: %v", err)
+	}
+
+	By("Rerunning Kuberang")
+	if err := runViaSSH([]string{"sudo kuberang"}, []NodeDeets{nodes.master[1]}, sshKey, 5*time.Minute); err != nil {
+		return fmt.Errorf("Failed to run kuberang: %v", err)
+	}
+
+	return nil
+}
+
 func installKismaticWithABadNode() {
 	By("Building a template")
 	template, err := template.New("planAWSOverlay").Parse(planAWSOverlay)

@@ -14,6 +14,8 @@ import (
 )
 
 const (
+	// StateAvailable is the AWS string returned when machine is available
+	StateAvailable = ec2.StateAvailable
 	// Ubuntu1604LTSEast is the AMI for Ubuntu 16.04 LTS
 	Ubuntu1604LTSEast = AMI("ami-29f96d3e")
 	// CentOS7East is the AMI for CentOS 7
@@ -34,6 +36,7 @@ type Node struct {
 	PrivateIP      string
 	PublicIP       string
 	SSHUser        string
+	State          string
 }
 
 // DNSRecord in Router53 on AWS
@@ -134,7 +137,7 @@ func (c Client) CreateNode(ami AMI, instanceType InstanceType) (string, error) {
 			Value: aws.Bool(false),
 		},
 	}
-	err = retryWithBackoff(func() error {
+	err = RetryWithBackoff(func() error {
 		var err2 error
 		_, err2 = api.ModifyInstanceAttribute(modifyReq)
 		return err2
@@ -161,7 +164,7 @@ func (c Client) CreateNode(ami AMI, instanceType InstanceType) (string, error) {
 			},
 		},
 	}
-	err = retryWithBackoff(func() error {
+	err = RetryWithBackoff(func() error {
 		var err2 error
 		_, err2 = api.CreateTags(tagReq)
 		return err2
@@ -188,7 +191,7 @@ func (c Client) GetNode(id string) (*Node, error) {
 		InstanceIds: []*string{aws.String(id)},
 	}
 	var resp *ec2.DescribeInstancesOutput
-	err = retryWithBackoff(func() error {
+	err = RetryWithBackoff(func() error {
 		var err2 error
 		resp, err2 = api.DescribeInstances(req)
 		return err2
@@ -217,11 +220,13 @@ func (c Client) GetNode(id string) (*Node, error) {
 	if instance.PublicIpAddress != nil {
 		publicIP = *instance.PublicIpAddress
 	}
+
 	return &Node{
 		PrivateDNSName: privateDNSName,
 		PrivateIP:      privateIP,
 		PublicIP:       publicIP,
 		SSHUser:        defaultSSHUserForAMI(AMI(*instance.ImageId)),
+		State:          instance.State.GoString(),
 	}, nil
 }
 
@@ -328,7 +333,7 @@ func modifyHostedZone(record *DNSRecord, action string, hostedZoneID string, api
 		Id: aws.String(*changeID),
 	}
 
-	err = retryWithBackoff(func() error {
+	err = RetryWithBackoff(func() error {
 		changeResp, err2 := api.GetChange(changeReq)
 		if err2 != nil {
 			return err2
@@ -345,7 +350,8 @@ func modifyHostedZone(record *DNSRecord, action string, hostedZoneID string, api
 	return nil
 }
 
-func retryWithBackoff(fn func() error, retries uint) error {
+// RetryWithBackoff will retry a function specified number of times
+func RetryWithBackoff(fn func() error, retries uint) error {
 	var attempts uint
 	var err error
 	for {

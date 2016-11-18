@@ -28,6 +28,7 @@ const (
 type infrastructureProvisioner interface {
 	ProvisionNodes(NodeCount, linuxDistro) (provisionedNodes, error)
 	TerminateNodes(provisionedNodes) error
+	TerminateNode(NodeDeets) error
 	SSHKey() string
 	ConfigureDNS(masterIPs []string) (*DNSRecord, error)
 	RemoveDNS(dnsRecord *DNSRecord) error
@@ -220,6 +221,26 @@ func (p awsProvisioner) TerminateNodes(runningNodes provisionedNodes) error {
 	return p.client.DestroyNodes(nodeIDs)
 }
 
+// TerminateNode will attempt to terminate a node and wait for the state to not be available
+func (p awsProvisioner) TerminateNode(node NodeDeets) error {
+	err := aws.RetryWithBackoff(func() error {
+		if err2 := p.client.DestroyNodes([]string{node.id}); err2 != nil {
+			return fmt.Errorf("Could not terminate node: %v", err2)
+		}
+
+		node, err3 := p.client.GetNode(node.id)
+		if err3 != nil {
+			return fmt.Errorf("Something went wrong after terminating node: %v", err3)
+		}
+		if node.State == aws.StateAvailable {
+			return fmt.Errorf("Terminating machine took too long")
+		}
+		return nil
+	}, 7)
+
+	return err
+}
+
 func (p awsProvisioner) ConfigureDNS(masterIPs []string) (*DNSRecord, error) {
 	// add DNS name
 	awsDNSRecord, err := p.client.CreateDNSRecords(masterIPs)
@@ -326,6 +347,10 @@ func (p packetProvisioner) TerminateNodes(nodes provisionedNodes) error {
 		return fmt.Errorf("FAILED TO DELETE THE FOLLOWING NODES ON PACKET: %v", failedDeletes)
 	}
 	return nil
+}
+
+func (p packetProvisioner) TerminateNode(node NodeDeets) error {
+	return p.client.DeleteNode(node.id)
 }
 
 func (p packetProvisioner) ConfigureDNS(masterIPs []string) (*DNSRecord, error) {
