@@ -29,7 +29,7 @@ type infrastructureProvisioner interface {
 	ProvisionNodes(NodeCount, linuxDistro) (provisionedNodes, error)
 	TerminateNodes(provisionedNodes) error
 	SSHKey() string
-	ConfgiureDNS(masterIPs []string) (*DNSRecord, error)
+	ConfigureDNS(masterIPs []string) (*DNSRecord, error)
 	RemoveDNS(dnsRecord *DNSRecord) error
 }
 
@@ -220,7 +220,7 @@ func (p awsProvisioner) TerminateNodes(runningNodes provisionedNodes) error {
 	return p.client.DestroyNodes(nodeIDs)
 }
 
-func (p awsProvisioner) ConfgiureDNS(masterIPs []string) (*DNSRecord, error) {
+func (p awsProvisioner) ConfigureDNS(masterIPs []string) (*DNSRecord, error) {
 	// add DNS name
 	awsDNSRecord, err := p.client.CreateDNSRecords(masterIPs)
 	if err != nil {
@@ -328,9 +328,9 @@ func (p packetProvisioner) TerminateNodes(nodes provisionedNodes) error {
 	return nil
 }
 
-func (p packetProvisioner) ConfgiureDNS(masterIPs []string) (*DNSRecord, error) {
+func (p packetProvisioner) ConfigureDNS(masterIPs []string) (*DNSRecord, error) {
 	// TODO
-	return nil, fmt.Errorf("ConfgiureDNS not imeplemented")
+	return nil, fmt.Errorf("ConfigureDNS not imeplemented")
 }
 
 func (p packetProvisioner) RemoveDNS(dnsRecord *DNSRecord) error {
